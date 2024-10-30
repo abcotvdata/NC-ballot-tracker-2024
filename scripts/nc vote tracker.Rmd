@@ -1,0 +1,318 @@
+title: "ballots-returned-tracker"
+
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(janitor)
+library(readxl)
+library(openxlsx)
+library(stringr)
+library(data.table)
+
+```
+
+```{css, echo=FALSE}
+
+h1.title {
+  font-family: roboto;
+  color: transparent;
+  font-weight: 700;
+  text-align: left;
+  font-size: 12px;
+  padding: 0px;
+  height: 0px;
+}
+
+.footer {
+  #font-family: roboto;
+  color: black;
+  text-align: left;
+  font-size: 12px;
+    padding: 5px;
+  font-style: italic;
+}
+
+h1 {
+  #font-family: roboto;
+  color: black;
+  font-weight: bolder;
+  text-align: center;
+  font-size: 36px;
+  margin-top: 0;
+  margin-bottom: 30px;
+  
+}
+h2 {
+  #font-family: roboto;
+  font-weight: 500;
+  color: black;
+  text-align: center;
+  font-size: 18px;
+  margin-top: 0;
+  margin-bottom: 2;
+}
+.bignumber {
+  #font-family: roboto;
+  color: white;
+  font-weight: 900;
+  text-align: center;
+  font-size: 40px;
+  line-height: 65px;
+  height: 65px;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+body {
+  color: black;
+  #font-family: roboto;
+  font-weight: 400;
+  font-size: 18px;
+}
+h4 {
+  font-size: 14px;
+  font-style: italic;
+  text-align: center;
+}
+  
+   * {
+      box-sizing: border-box;
+   }
+   .card {
+      color: white;
+      float: left;
+      width: calc(20% - 10px);
+      padding: 5px;
+      border-radius: 10px;
+      margin-left: 3px;
+      margin-right: 3px;
+      margin-top: 3px;
+      margin-bottom: 3px;
+      height: 100%;
+   }
+   .card p {
+     #font-family: roboto;
+     text-align: center;
+     font-size: 14px;
+     margin-bottom: 0;
+   }
+   .cardContainer:after {
+      content: "";
+      display: table;
+      clear: both;
+   }
+   
+   @media screen and (max-width: 760px) {
+      .bignumber {
+         font-size: 32px;
+      }
+     
+     .card p {
+         font-size: 13px;
+      }
+
+
+   }
+   
+   @media screen and (max-width: 650px) {
+      .card {
+         width: 100%;
+      }
+      h1.title {
+        font-size: 22px;
+      }
+      
+      .bignumber {
+         font-size: 35px;
+      }
+     
+     .card p {
+         font-size: 14px;
+      }
+      
+      
+   }
+```
+
+```{r, echo=FALSE, warning=FALSE}
+
+
+```
+
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
+
+today_UTC <- as.POSIXct(Sys.time()) #get todays date as UTC
+today_posix <- format(today_UTC, tz="America/Los_Angeles",usetz=TRUE)
+today <- as.Date(substr(as.character(today_posix), 1,10))
+yesterday <- as.Date(today-1) #get yesterday's date
+filename <- paste(sep="", "counted_votes_",yesterday,".zip") #put yesterdays date into filename
+vbmfile <- paste(sep="", "absentee_outstanding_",yesterday, ".zip")
+voterfile <- paste(sep="","voter_registration_",yesterday,".zip")
+#pretty dates
+today_display <- format(today, "%A, %b. %d, %Y")
+
+download.file("https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/absentee_20241105.zip", filename) #download vote counts
+download.file("https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/absentee_spoiled_outstanding_20241105.zip",vbmfile) #download outstanding votes
+
+filename <- unzip(filename)
+vbmfile <- unzip(vbmfile)
+ballots <- fread(filename) #read voter file 
+vbm <- fread(vbmfile) #read vbm file
+
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#download voter registration files
+#create directory for downloaded files
+dir.create("ncvoter_files")
+#download,rename and unzip files
+for (i in 1:100) {
+  #construct url
+  url <- paste0("https://s3.amazonaws.com/dl.ncsbe.gov/data/ncvoter", i, ".zip")
+  #set destination file name
+  destfile <- paste0("ncvoter_files/voter",i,".zip")
+  #download the file
+  download.file(url,destfile,mode = "wb")
+  #unzip the file
+  unzip(destfile, exdir = "ncvoter_files")
+}
+
+#list all txt files in directory after unzipping
+txt_files <- list.files("ncvoter_files", pattern = "\\.txt$", full.names = TRUE)
+
+#initialize empty dataframe
+combined_data <- data.frame(stringsAsFactors = FALSE)
+files_processed <- 0
+#load each txt file individually and append
+for (file in txt_files) {
+  temp_data <- read.delim(file, colClasses = "character")
+  combined_data <- bind_rows(combined_data, temp_data)
+  files_processed <- files_processed + 1
+  cat("Files processed:", files_processed, "\n")
+}
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+ballots_clean <- ballots %>%
+  select(1,7,8,9,10,12,14,28,34,35,36,37,38,39) #select only the columns we need
+  
+ballots_counted_type <- ballots_clean %>%
+  filter(ballot_rtn_status == "ACCEPTED") %>%
+  group_by(county_desc, ballot_req_type) %>%
+  summarize(count = n()) %>%
+  pivot_wider(names_from = ballot_req_type, values_from = count) %>%
+  mutate(total = `EARLY VOTING` + `MAIL`)
+
+ballots_counted_type[is.na(ballots_counted_type)] <- 0
+
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#number of registered voters by county
+voters <- combined_data %>%
+  group_by(county_desc) %>%
+  summarize(voters = n())
+
+```
+
+```{r, echo=FALSE, warning=FALSE}
+#percent of registered voters who have voted so far
+
+votes_cast <- left_join(ballots_counted_type, voters, by ="county_desc")
+votes_cast <- votes_cast %>%
+  mutate(p_votes = round((total/voters)*100,1))
+
+write.csv(votes_cast,"votes_cast.csv", row.names = FALSE)
+```
+
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+total_voters_registered = sum(voters$voters)
+
+total_vbm_issued = sum(vbm$abs_sent)
+
+total_ballots_accepted = sum(ballots_counted_type$total)
+total_ballots_early = sum(ballots_counted_type$`EARLY VOTING`)
+total_ballots_vbm = sum(ballots_counted_type$MAIL)
+total_pct_voted_early = round(((total_ballots_accepted/total_voters_registered)*100), digits = 1)
+
+
+if (total_voters_registered > 1000000) {
+  total_voters_registered_display = paste(sep="", as.character(round((total_voters_registered/1000000), digits = 1)), " M")
+}
+
+if (total_vbm_issued > 1000000) {
+  total_vbm_issued_display = paste(sep="", as.character(round((total_vbm_issued/1000000), digits=1)), " M")
+} else {
+  total_ballots_issued_display = paste(sep="", as.character(round((total_vbm_issued/1000), digits=1)), " K")
+}
+
+if (total_ballots_accepted > 1000000) {
+  total_ballots_accepted_display = paste(sep="", as.character(round((total_ballots_accepted/1000000), digits=1)), " M")
+} else {
+  total_ballots_accepted_display = paste(sep="", as.character(round((total_ballots_accepted/1000), digits=1)), " K")
+}
+
+
+```
+
+<h1>North Carolina Ballot Tracker</h1>
+<h4>Last updated `r today_display` </h4>
+
+<div class="cardContainer">
+<div class="card" style="background-color:#00318b;">
+<p>Voters Registered<br>
+<span class="bignumber">`r total_voters_registered_display`<br></span>`
+</div>
+<div class="card" style="background-color:#00318b;">
+<p>Vote-By-Mail Ballots Requested<br>
+<span class="bignumber">`r total_vbm_issued_display`<br></span>
+</div>
+<div class="card" style="background-color:#00318b;">
+<p>Ballots Accepted<br>
+<span class="bignumber">`r total_ballots_accepted_display`<br></span>
+</div>
+<div class="card" style="background-color:#00318b;">
+<p>% Voted Early<br>
+<span class="bignumber">`r total_pct_voted_early`%<br></span><p>
+</div>
+</div>
+
+<br>
+<br>
+
+
+<iframe title="Voters by County" aria-label="Map" id="datawrapper-chart-5lVI8" src="https://datawrapper.dwcdn.net/5lVI8/1/" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="711" data-external="1"></iframe><script type="text/javascript">!function(){"use strict";window.addEventListener("message",(function(e){if(void 0!==e.data["datawrapper-height"]){var t=document.querySelectorAll("iframe");for(var a in e.data["datawrapper-height"])for(var r=0;r<t.length;r++){if(t[r].contentWindow===e.source)t[r].style.height=e.data["datawrapper-height"][a]+"px"}}}))}();
+</script>
+
+<br>
+<br>
+
+<iframe title="Search for your county" aria-label="Dot Plot" id="datawrapper-chart-JCRtj" src="https://datawrapper.dwcdn.net/JCRtj/1/" scrolling="no" frameborder="0" style="width: 0; min-width: 100% !important; border: none;" height="525" data-external="1"></iframe><script type="text/javascript">!function(){"use strict";window.addEventListener("message",(function(e){if(void 0!==e.data["datawrapper-height"]){var t=document.querySelectorAll("iframe");for(var a in e.data["datawrapper-height"])for(var r=0;r<t.length;r++){if(t[r].contentWindow===e.source)t[r].style.height=e.data["datawrapper-height"][a]+"px"}}}))}();
+</script>
+
+<br>
+<br>
+<div class="footer">Built and designed by Maggie Green and Lindsey Feingold. Source: <a href="https://www.ncsbe.gov/results-data" target="_blank">North Carolina State Board of Elections</a>. Data usually lags by about a day.</div>
+
+
+```{r, echo=FALSE, warning=FALSE}
+
+#trying to get date from header
+
+#x <- XLConnect::loadWorkbook("vbm-statistics.xlsm")
+#df <- XLConnect::readWorksheet(x, sheet=1)
+
+#sheet1 <- x$worksheets[[1]]
+
+#headers <- sheet1$headerFooter
+
+```
