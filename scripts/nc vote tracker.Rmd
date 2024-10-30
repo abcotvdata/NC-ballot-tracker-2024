@@ -252,7 +252,7 @@ if (total_voters_registered > 1000000) {
 if (total_vbm_issued > 1000000) {
   total_vbm_issued_display = paste(sep="", as.character(round((total_vbm_issued/1000000), digits=1)), " M")
 } else {
-  total_ballots_issued_display = paste(sep="", as.character(round((total_vbm_issued/1000), digits=1)), " K")
+  total_vbm_issued_display = paste(sep="", as.character(round((total_vbm_issued/1000), digits=1)), " K")
 }
 
 if (total_ballots_accepted > 1000000) {
