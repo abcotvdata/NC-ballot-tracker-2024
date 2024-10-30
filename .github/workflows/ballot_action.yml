@@ -15,7 +15,7 @@ jobs:
       - name: Set up pandoc for Rmd docs
         uses: r-lib/actions/setup-pandoc@v2
       - name: Install dependencies and packages
-        run: Rscript -e 'install.packages(c("tidyverse","janitor", "readxl", "openxlsx", "XLConnect", "rmarkdown"))'
+        run: Rscript -e 'install.packages(c("tidyverse","janitor", "readxl", "openxlsx", "XLConnect", "rmarkdown", "stringr"))'
       - name: Get ballot return data
         run: Rscript scripts/render-ballot-markdown.R
       - name: Commit results
