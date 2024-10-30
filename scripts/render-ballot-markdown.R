@@ -1,6 +1,6 @@
 library(rmarkdown)
 
 # Render page
-rmarkdown::render('scripts/ballots-returned-tracker.Rmd', 
+rmarkdown::render('scripts/nc vote tracker.Rmd', 
                   output_dir = "docs",
-                  output_file = 'ballots-returned-tracker.html')
+                  output_file = 'nc-ballots-returned-tracker.html')
