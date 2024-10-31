@@ -242,7 +242,7 @@ if (total_ballots_accepted > 1000000) {
 <div class="cardContainer">
 <div class="card" style="background-color:#00318b;">
 <p>Voters Registered<br>
-<span class="bignumber">`r total_voters_registered_display`<br></span>`
+<span class="bignumber">`r total_voters_registered_display`<br></span>
 </div>
 <div class="card" style="background-color:#00318b;">
 <p>Vote-By-Mail Ballots Requested<br>
