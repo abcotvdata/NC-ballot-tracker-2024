@@ -222,6 +222,15 @@ voters <- combined_data %>%
 ```
 
 ```{r, echo=FALSE, warning=FALSE}
+#remove extra files that take up a lot of memory
+rm(combined_data,temp_data,txt_files,ballots,destfile,file,voterfile)
+unlink("ncvoter_files", recursive = TRUE)
+
+
+```
+
+
+```{r, echo=FALSE, warning=FALSE}
 #percent of registered voters who have voted so far
 
 votes_cast <- left_join(ballots_counted_type, voters, by ="county_desc")
