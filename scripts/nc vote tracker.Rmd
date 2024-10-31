@@ -148,83 +148,50 @@ today_UTC <- as.POSIXct(Sys.time()) #get todays date as UTC
 today_posix <- format(today_UTC, tz="America/Los_Angeles",usetz=TRUE)
 today <- as.Date(substr(as.character(today_posix), 1,10))
 yesterday <- as.Date(today-1) #get yesterday's date
-filename <- paste(sep="", "counted_votes_",yesterday,".zip") #put yesterdays date into filename
+filename <- paste(sep="", "counted_votes_",yesterday,".csv") #put yesterdays date into filename
 vbmfile <- paste(sep="", "absentee_outstanding_",yesterday, ".zip")
-voterfile <- paste(sep="","voter_registration_",yesterday,".zip")
+#voterfile <- paste(sep="","voter_registration_",yesterday,".zip")
 #pretty dates
 today_display <- format(today, "%A, %b. %d, %Y")
 
-download.file("https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/absentee_20241105.zip", filename) #download vote counts
+download.file("https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/absentee_counts_county_20241105.csv", filename) #download vote counts
 download.file("https://s3.amazonaws.com/dl.ncsbe.gov/ENRS/2024_11_05/absentee_spoiled_outstanding_20241105.zip",vbmfile) #download outstanding votes
 
-filename <- unzip(filename)
+#filename <- unzip(filename)
 vbmfile <- unzip(vbmfile)
-ballots <- fread(filename) #read voter file 
+ballots <- read.csv(filename) #read voter file 
 vbm <- fread(vbmfile) #read vbm file
 
 ```
 
-```{r, echo=FALSE, warning=FALSE}
-#download voter registration files
-#create directory for downloaded files
-dir.create("ncvoter_files")
-#download,rename and unzip files
-for (i in 1:100) {
-  #construct url
-  url <- paste0("https://s3.amazonaws.com/dl.ncsbe.gov/data/ncvoter", i, ".zip")
-  #set destination file name
-  destfile <- paste0("ncvoter_files/voter",i,".zip")
-  #download the file
-  download.file(url,destfile,mode = "wb")
-  #unzip the file
-  unzip(destfile, exdir = "ncvoter_files")
-}
-
-#list all txt files in directory after unzipping
-txt_files <- list.files("ncvoter_files", pattern = "\\.txt$", full.names = TRUE)
-
-#initialize empty dataframe
-combined_data <- data.frame(stringsAsFactors = FALSE)
-files_processed <- 0
-#load each txt file individually and append
-for (file in txt_files) {
-  temp_data <- read.delim(file, colClasses = "character")
-  combined_data <- bind_rows(combined_data, temp_data)
-  files_processed <- files_processed + 1
-  cat("Files processed:", files_processed, "\n")
-}
-
-```
-
 
 ```{r, echo=FALSE, warning=FALSE}
-
-ballots_clean <- ballots %>%
-  select(1,7,8,9,10,12,14,28,34,35,36,37,38,39) #select only the columns we need
   
-ballots_counted_type <- ballots_clean %>%
-  filter(ballot_rtn_status == "ACCEPTED") %>%
-  group_by(county_desc, ballot_req_type) %>%
-  summarize(count = n()) %>%
-  pivot_wider(names_from = ballot_req_type, values_from = count) %>%
-  mutate(total = `EARLY VOTING` + `MAIL`)
+ballots_counted_type <- ballots %>%
+  group_by(county_name, abs_request_type) %>%
+  summarize(count = sum(X0)) %>%
+  pivot_wider(names_from = abs_request_type, values_from = count) %>%
+  mutate(MAIL = CIVILIAN + MILITARY + OVERSEAS) %>%
+  mutate(`EARLY VOTING` = `EARLY VOTING` + `ONE-STOP`) %>%
+  select(1,3,7) %>%
+  mutate(total = `EARLY VOTING` + `MAIL`) %>%
+  rename(county_desc = county_name)
 
-ballots_counted_type[is.na(ballots_counted_type)] <- 0
+
+#ballots_counted_type[is.na(ballots_counted_type)] <- 0
 
 ```
 
 ```{r, echo=FALSE, warning=FALSE}
 #number of registered voters by county
-voters <- combined_data %>%
-  group_by(county_desc) %>%
-  summarize(voters = n())
+voters <- read.csv("./registered_voters_nc.csv")
 
 ```
 
 ```{r, echo=FALSE, warning=FALSE}
 #remove extra files that take up a lot of memory
-rm(combined_data,temp_data,txt_files,ballots,destfile,file,voterfile)
-unlink("ncvoter_files", recursive = TRUE)
+#rm(combined_data,temp_data,txt_files,ballots,destfile,file,voterfile)
+#unlink("ncvoter_files", recursive = TRUE)
 
 
 ```
