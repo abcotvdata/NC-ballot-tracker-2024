@@ -1,6 +1,6 @@
-title: "ballots-returned-tracker"
+#title: "ballots-returned-tracker"
 
-output: html_document
+#output: html_document
 ---
 
 ```{r setup, include=FALSE}
@@ -165,7 +165,7 @@ vbm <- fread(vbmfile) #read vbm file
 ```
 
 
-```{r, echo=FALSE, warning=FALSE}
+```{r, echo=FALSE, warning=FALSE, message=FALSE}
   
 ballots_counted_type <- ballots %>%
   group_by(county_name, abs_request_type) %>%
