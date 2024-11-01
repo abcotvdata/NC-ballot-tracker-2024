@@ -79,7 +79,7 @@ h4 {
    }
    .card {
       color: white;
-      float: left;
+      float: center;
       width: calc(20% - 10px);
       padding: 5px;
       border-radius: 10px;
@@ -89,6 +89,9 @@ h4 {
       margin-bottom: 3px;
       height: 100%;
    }
+   .card body {
+      width: 100%;
+    }
    .card p {
      #font-family: roboto;
      text-align: center;
