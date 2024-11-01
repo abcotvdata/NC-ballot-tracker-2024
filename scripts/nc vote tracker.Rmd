@@ -262,7 +262,7 @@ if (total_ballots_accepted > 1000000) {
 <br>
 <br>
 
-Across North Carolina, <b>`r total_pct_voted_early`%</b> of registered voters cast their ballots in the 2024 Presidential Election.  Early voting ends Saturday, November 2. At that point, voters must wait until Tuesday, November 5 to cast their ballot at their designated precinct.
+Across North Carolina, <b>`r total_pct_voted_early`%</b> of registered voters have cast their ballots in the 2024 Presidential Election.  Early voting ends Saturday, November 2. At that point, voters must wait until Tuesday, November 5 to cast their ballot at their designated precinct.
 
 <center><h3><a href="https://abc11.com/feature/post/voter-guide-2024-north-carolina/15465861/" target="_blank">Click here for ABC11's  Voter Guide</a></h3></center>
 
