@@ -89,9 +89,7 @@ h4 {
       margin-bottom: 3px;
       height: 100%;
    }
-   .card body {
-      height: 100%;
-    }
+
    .card p {
      #font-family: roboto;
      text-align: center;
