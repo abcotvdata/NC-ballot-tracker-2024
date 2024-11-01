@@ -90,7 +90,7 @@ h4 {
       height: 100%;
    }
    .card body {
-      width: 100%;
+      height: 100%;
     }
    .card p {
      #font-family: roboto;
