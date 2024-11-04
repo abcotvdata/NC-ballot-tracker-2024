@@ -181,7 +181,9 @@ ballots_counted_type <- ballots %>%
 
 ```{r, echo=FALSE, warning=FALSE}
 #number of registered voters by county
-voters <- read.csv("./registered_voters_nc.csv")
+voters <- read.csv("./nc_registeredvoters.csv")
+voters_county <- voters %>% select(1,22) %>% rename(county_desc = county) %>% rename(voters = total) %>% filter(county_desc != "Totals")
+
 
 ```
 
@@ -197,7 +199,7 @@ voters <- read.csv("./registered_voters_nc.csv")
 ```{r, echo=FALSE, warning=FALSE}
 #percent of registered voters who have voted so far
 
-votes_cast <- left_join(ballots_counted_type, voters, by ="county_desc")
+votes_cast <- left_join(ballots_counted_type, voters_county, by ="county_desc")
 votes_cast <- votes_cast %>%
   mutate(p_votes = round((total/voters)*100,1))
 
@@ -208,7 +210,7 @@ write.csv(votes_cast,"votes_cast.csv", row.names = FALSE)
 
 ```{r, echo=FALSE, warning=FALSE}
 
-total_voters_registered = sum(voters$voters)
+total_voters_registered = sum(voters_county$voters)
 
 total_vbm_issued = sum(vbm$abs_sent)
 
