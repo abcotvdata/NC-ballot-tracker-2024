@@ -183,7 +183,7 @@ ballots_counted_type <- ballots %>%
 #number of registered voters by county
 voters <- read.csv("./nc_registeredvoters.csv") %>% clean_names()
 voters_county <- voters %>% select(1,22) %>% rename(county_desc = county) %>% rename(voters = total) %>% filter(county_desc != "Totals")
-
+voters_county$voters <- as.numeric(voters_county$voters)
 
 ```
 
